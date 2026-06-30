@@ -170,6 +170,26 @@ pub async fn model_info(State(state): State<Arc<ChatAppState>>) -> impl IntoResp
     Json(json!({ "data": models }))
 }
 
+/// GET /key/info — 密钥信息
+pub async fn key_info() -> impl IntoResponse {
+    Json(json!({"key": "default", "key_name": "默认密钥", "models": [], "spend": 0.0}))
+}
+
+/// GET /key/list — 密钥列表
+pub async fn key_list() -> impl IntoResponse {
+    Json(json!({"keys": [{"token": "sk-****", "key_name": "默认密钥", "spend": 0.0}]}))
+}
+
+/// GET /health/readiness — 健康检查
+pub async fn health_readiness() -> impl IntoResponse {
+    Json(json!({"status": "ok", "db_connected": true}))
+}
+
+/// GET /global/spend/logs — 用量日志
+pub async fn spend_logs() -> impl IntoResponse {
+    Json(json!({"data": [], "total": 0}))
+}
+
 /// 创建管理路由（不包含 state，由上层统一注入）
 pub fn router() -> axum::Router<Arc<ChatAppState>> {
     axum::Router::new()
@@ -184,5 +204,9 @@ pub fn router() -> axum::Router<Arc<ChatAppState>> {
         .route("/public/model_hub/info", axum::routing::get(mock_empty))
         .route("/get/favicon", axum::routing::get(mock_empty))
         .route("/global/spend", axum::routing::get(global_spend))
+        .route("/global/spend/logs", axum::routing::get(spend_logs))
         .route("/model/info", axum::routing::get(model_info))
+        .route("/key/info", axum::routing::get(key_info))
+        .route("/key/list", axum::routing::get(key_list))
+        .route("/health/readiness", axum::routing::get(health_readiness))
 }
