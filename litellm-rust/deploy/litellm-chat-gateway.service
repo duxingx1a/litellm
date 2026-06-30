@@ -1,0 +1,26 @@
+[Unit]
+Description=LiteLLM Chat Gateway (Rust 精简版)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/litellm-chat
+Environment="RUST_LOG=info"
+Environment="HOST=0.0.0.0"
+Environment="PORT=4001"
+Environment="LITELLM_MASTER_KEY=your-master-key-here"
+Environment="CHAT_PROVIDERS=gpt-4o@openai@https://api.openai.com/v1@sk-your-key-here"
+ExecStart=/opt/litellm-chat/litellm-chat-gateway
+Restart=always
+RestartSec=5
+
+# 安全加固
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/litellm-chat
+
+[Install]
+WantedBy=multi-user.target
