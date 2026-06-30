@@ -53,15 +53,13 @@ pub async fn login(
 
     if state.validate_token(password) {
         return (
-            StatusCode::OK,
+            StatusCode::FOUND,
             [
                 (axum::http::header::SET_COOKIE, format!("token={}; Path=/; SameSite=Lax; Max-Age=86400", password)),
+                (axum::http::header::LOCATION, "/ui/".to_string()),
             ],
             Json(json!({
                 "token": password,
-                "user_id": "default_user",
-                "user_role": "admin",
-                "user_email": "admin@local",
                 "redirect_url": "/"
             })),
         ).into_response();
