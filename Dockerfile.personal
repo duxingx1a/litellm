@@ -1,7 +1,6 @@
-# LiteLLM 个人版 Docker 镜像
-# 前端在 Windows 上预构建，Docker 只打包 Alpine + Rust 二进制 + 前端静态文件
-FROM alpine:3.21
-RUN apk add --no-cache ca-certificates tzdata && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+# LiteLLM 个人版 Docker 镜像（Debian glibc，兼容服务器编译的 Rust 二进制）
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tzdata && rm -rf /var/lib/apt/lists/* && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
 COPY litellm-rust/litellm-chat-gateway /app/litellm-chat-gateway
 COPY ui/litellm-dashboard/out /app/static
