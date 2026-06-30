@@ -88,11 +88,10 @@ pub async fn user_info() -> impl IntoResponse {
     }))
 }
 
-/// 创建管理路由
-pub fn router(state: Arc<ChatAppState>) -> axum::Router {
+/// 创建管理路由（不包含 state，由上层统一注入）
+pub fn router() -> axum::Router<Arc<ChatAppState>> {
     axum::Router::new()
         .route("/login", axum::routing::post(login))
         .route("/get/ui_settings", axum::routing::get(ui_settings))
         .route("/user/info", axum::routing::get(user_info))
-        .with_state(state)
 }

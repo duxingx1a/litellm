@@ -127,7 +127,7 @@ pub fn router(state: Arc<ChatAppState>) -> axum::Router {
     axum::Router::new()
         .route("/v1/chat/completions", axum::routing::post(chat_completions))
         .route("/health", axum::routing::get(health_check))
-        .merge(crate::routes::management::router(state.clone()))
+        .merge(crate::routes::management::router())
         // 前端静态文件（带 SPA fallback）
         .nest_service("/", ServeDir::new(&static_dir))
         .with_state(state)
