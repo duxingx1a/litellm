@@ -112,6 +112,14 @@ pub async fn ui_theme_settings() -> impl IntoResponse {
     }))
 }
 
+/// 通用 mock 端点（返回空数据，避免前端 404 阻塞）
+pub async fn mock_empty() -> impl IntoResponse {
+    Json(json!({}))
+}
+pub async fn mock_array() -> impl IntoResponse {
+    Json(json!([]))
+}
+
 /// 创建管理路由（不包含 state，由上层统一注入）
 pub fn router() -> axum::Router<Arc<ChatAppState>> {
     axum::Router::new()
@@ -120,4 +128,7 @@ pub fn router() -> axum::Router<Arc<ChatAppState>> {
         .route("/get/ui_settings", axum::routing::get(ui_settings))
         .route("/get/ui_theme_settings", axum::routing::get(ui_theme_settings))
         .route("/user/info", axum::routing::get(user_info))
+        .route("/public/litellm_blog_posts", axum::routing::get(mock_array))
+        .route("/public/model_hub/info", axum::routing::get(mock_empty))
+        .route("/get/favicon", axum::routing::get(mock_empty))
 }
