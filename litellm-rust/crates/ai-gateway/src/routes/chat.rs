@@ -132,17 +132,14 @@ async fn ui_well_known() -> impl IntoResponse {
 
 /// 创建 chat 路由（含前端静态文件 + 管理 API）
 pub fn router(state: Arc<ChatAppState>) -> axum::Router {
-    use tower_http::services::ServeDir;
+    use tower_http::services::{ServeDir, ServeFile};
 
     let static_dir = std::env::var("STATIC_DIR").unwrap_or_else(|_| "./static".to_string());
+    let index_path = format!("{}/index.html", static_dir);
 
-    // 未匹配 API 请求的 fallback：返回空 JSON（前端 JS 需要 JSON 响应）
-    async fn api_fallback(method: axum::http::Method) -> impl IntoResponse {
-        if method == axum::http::Method::POST {
-            (StatusCode::OK, Json(json!({"ok": true})))
-        } else {
-            Json(json!({}))
-        }
+    // 未匹配 API 请求返回空 JSON
+    async fn json_fallback() -> Json<Value> {
+        Json(json!({}))
     }
 
     axum::Router::new()
@@ -150,8 +147,19 @@ pub fn router(state: Arc<ChatAppState>) -> axum::Router {
         .route("/health", axum::routing::get(health_check))
         .route("/litellm/.well-known/litellm-ui-config", axum::routing::get(ui_well_known))
         .merge(crate::routes::management::router())
-        // 前端静态文件
-        .nest_service("/", ServeDir::new(&static_dir))
-        .fallback(api_fallback)
+        // 静态资源
+        .nest_service("/_next", ServeDir::new(format!("{}/_next", static_dir)))
+        .route_service("/favicon.ico", ServeFile::new(format!("{}/favicon.ico", static_dir)))
+        // API 通配 fallback（返回空 JSON，避免前端 404 卡死）
+        .route("/v1/{*path}", axum::routing::any(json_fallback))
+        .route("/public/{*path}", axum::routing::any(json_fallback))
+        .route("/get/{*path}", axum::routing::any(json_fallback))
+        .route("/key/{*path}", axum::routing::any(json_fallback))
+        .route("/user/{*path}", axum::routing::any(json_fallback))
+        .route("/model/{*path}", axum::routing::any(json_fallback))
+        .route("/global/{*path}", axum::routing::any(json_fallback))
+        // SPA fallback: 其他路径返回 index.html
+        .route_service("/", ServeFile::new(&index_path))
+        .fallback_service(ServeFile::new(&index_path))
         .with_state(state)
 }
