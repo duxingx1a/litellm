@@ -88,10 +88,23 @@ pub async fn user_info() -> impl IntoResponse {
     }))
 }
 
+/// GET /litellm/.well-known/litellm-ui-config — 前端 UI 配置
+pub async fn ui_config() -> impl IntoResponse {
+    Json(json!({
+        "server_root_path": "",
+        "proxy_base_url": "",
+        "auto_redirect_to_sso": false,
+        "admin_ui_disabled": false,
+        "sso_configured": false,
+        "is_control_plane": false,
+    }))
+}
+
 /// 创建管理路由（不包含 state，由上层统一注入）
 pub fn router() -> axum::Router<Arc<ChatAppState>> {
     axum::Router::new()
         .route("/login", axum::routing::post(login))
         .route("/get/ui_settings", axum::routing::get(ui_settings))
         .route("/user/info", axum::routing::get(user_info))
+        .route("/litellm/.well-known/litellm-ui-config", axum::routing::get(ui_config))
 }
