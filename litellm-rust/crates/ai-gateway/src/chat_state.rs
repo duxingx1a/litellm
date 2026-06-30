@@ -3,7 +3,7 @@
 
 use litellm_core::chat::types::ProviderConfig;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 /// 用量统计累计数据
 #[derive(Debug, Default, Clone)]
@@ -59,6 +59,7 @@ impl ChatAppState {
                 let api_base = parts[2].trim().to_string();
                 let api_key = parts[3].trim().to_string();
 
+                let display_name = model.clone();
                 model_providers.insert(
                     model.clone(),
                     ProviderConfig {
@@ -69,7 +70,7 @@ impl ChatAppState {
                     },
                 );
 
-                eprintln!("已加载模型: {} -> {}", model, api_base);
+                eprintln!("已加载模型: {} -> {}", display_name, api_base);
             }
         }
 
