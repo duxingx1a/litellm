@@ -16,6 +16,7 @@ use std::sync::Arc;
 
 use crate::chat_state::ChatAppState;
 
+
 /// POST /v1/chat/completions
 pub async fn chat_completions(
     State(state): State<Arc<ChatAppState>>,
@@ -122,7 +123,7 @@ pub async fn health_check() -> &'static str {
 async fn ui_well_known() -> impl IntoResponse {
     Json(json!({
         "server_root_path": "",
-        "proxy_base_url": null,
+        "proxy_base_url": "http://127.0.0.1:3000",
         "auto_redirect_to_sso": false,
         "admin_ui_disabled": false,
         "sso_configured": false,
@@ -130,36 +131,92 @@ async fn ui_well_known() -> impl IntoResponse {
     }))
 }
 
-/// 创建 chat 路由（含前端静态文件 + 管理 API）
+/// SPA fallback: API 返回空 JSON，静态文件原样返回，其他返回 index.html
+async fn spa_fallback(req: axum::http::Request<axum::body::Body>) -> impl IntoResponse {
+    let path = req.uri().path().to_string();
+
+    // API 路径：返回空 JSON
+    if path.starts_with("/v1/") || path.starts_with("/get/") || path.starts_with("/user/")
+        || path.starts_with("/key/") || path.starts_with("/public/") || path.starts_with("/global/")
+        || path.starts_with("/model/") || path.starts_with("/login") || path.starts_with("/v2/")
+        || path.starts_with("/v3/") || path.starts_with("/litellm/")
+    {
+        return Json(json!({})).into_response();
+    }
+
+    // 尝试从静态目录返回对应文件
+    let static_dir = std::env::var("STATIC_DIR").unwrap_or_else(|_| "./static".to_string());
+    // 去掉 /ui 前缀后尝试匹配
+    let file_path = if path.starts_with("/ui/") {
+        format!("{}/{}", static_dir, &path[4..])
+    } else if path == "/ui" || path == "/ui/" {
+        format!("{}/index.html", static_dir)
+    } else if path == "/" {
+        format!("{}/index.html", static_dir)
+    } else {
+        format!("{}{}", static_dir, path)
+    };
+
+    // 先检查文件是否存在
+    if let Ok(metadata) = tokio::fs::metadata(&file_path).await {
+        if metadata.is_file() {
+            if let Ok(content) = tokio::fs::read(&file_path).await {
+                let ct = if file_path.ends_with(".html") || file_path.ends_with("/") {
+                    "text/html; charset=utf-8"
+                } else if file_path.ends_with(".json") {
+                    "application/json"
+                } else if file_path.ends_with(".js") {
+                    "application/javascript"
+                } else if file_path.ends_with(".css") {
+                    "text/css"
+                } else {
+                    "application/octet-stream"
+                };
+                return (StatusCode::OK, [(axum::http::header::CONTENT_TYPE, ct)], content).into_response();
+            }
+        }
+        if metadata.is_dir() {
+            // 目录则尝试 index.html
+            let idx = format!("{}/index.html", file_path.trim_end_matches('/'));
+            if let Ok(content) = tokio::fs::read(&idx).await {
+                return (StatusCode::OK, [(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")], content).into_response();
+            }
+        }
+    }
+
+    // 最终 fallback: index.html (SPA)
+    let index = format!("{}/index.html", static_dir);
+    if let Ok(content) = tokio::fs::read(&index).await {
+        (StatusCode::OK, [(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")], content).into_response()
+    } else {
+        (StatusCode::NOT_FOUND, "not found").into_response()
+    }
+}
+
+/// 创建 chat 路由
 pub fn router(state: Arc<ChatAppState>) -> axum::Router {
     use tower_http::services::{ServeDir, ServeFile};
+    use tower_http::cors::{Any, CorsLayer};
 
     let static_dir = std::env::var("STATIC_DIR").unwrap_or_else(|_| "./static".to_string());
-    let index_path = format!("{}/index.html", static_dir);
 
-    // 未匹配 API 请求返回空 JSON
-    async fn json_fallback() -> Json<Value> {
-        Json(json!({}))
-    }
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
 
     axum::Router::new()
         .route("/v1/chat/completions", axum::routing::post(chat_completions))
         .route("/health", axum::routing::get(health_check))
         .route("/litellm/.well-known/litellm-ui-config", axum::routing::get(ui_well_known))
         .merge(crate::routes::management::router())
+        .layer(cors)
         // 静态资源
         .nest_service("/_next", ServeDir::new(format!("{}/_next", static_dir)))
+        .nest_service("/ui/_next", ServeDir::new(format!("{}/_next", static_dir)))
+        .nest_service("/assets", ServeDir::new(format!("{}/assets", static_dir)))
         .route_service("/favicon.ico", ServeFile::new(format!("{}/favicon.ico", static_dir)))
-        // API 通配 fallback（返回空 JSON，避免前端 404 卡死）
-        .route("/v1/{*path}", axum::routing::any(json_fallback))
-        .route("/public/{*path}", axum::routing::any(json_fallback))
-        .route("/get/{*path}", axum::routing::any(json_fallback))
-        .route("/key/{*path}", axum::routing::any(json_fallback))
-        .route("/user/{*path}", axum::routing::any(json_fallback))
-        .route("/model/{*path}", axum::routing::any(json_fallback))
-        .route("/global/{*path}", axum::routing::any(json_fallback))
-        // SPA fallback: 其他路径返回 index.html
-        .route_service("/", ServeFile::new(&index_path))
-        .fallback_service(ServeFile::new(&index_path))
+        // SPA fallback
+        .fallback(spa_fallback)
         .with_state(state)
 }

@@ -28,13 +28,19 @@ pub async fn login(
         if let Ok(auth_str) = auth.to_str() {
             let token = auth_str.strip_prefix("Bearer ").unwrap_or("");
             if state.validate_token(token) {
-                return (StatusCode::OK, Json(json!({
-                    "token": token,
-                    "user_id": "default_user",
-                    "user_role": "admin",
-                    "user_email": "admin@local",
-                    "redirect_url": "/ui/"
-                }))).into_response();
+                return (
+                    StatusCode::OK,
+                    [
+                        (axum::http::header::SET_COOKIE, format!("token={}; Path=/; SameSite=Lax; Max-Age=86400", token)),
+                    ],
+                    Json(json!({
+                        "token": token,
+                        "user_id": "default_user",
+                        "user_role": "admin",
+                        "user_email": "admin@local",
+                        "redirect_url": "/"
+                    })),
+                ).into_response();
             }
         }
     }
@@ -46,13 +52,19 @@ pub async fn login(
         .unwrap_or("");
 
     if state.validate_token(password) {
-        return (StatusCode::OK, Json(json!({
-            "token": password,
-            "user_id": "default_user",
-            "user_role": "admin",
-            "user_email": "admin@local",
-            "redirect_url": "/ui/"
-        }))).into_response();
+        return (
+            StatusCode::OK,
+            [
+                (axum::http::header::SET_COOKIE, format!("token={}; Path=/; SameSite=Lax; Max-Age=86400", password)),
+            ],
+            Json(json!({
+                "token": password,
+                "user_id": "default_user",
+                "user_role": "admin",
+                "user_email": "admin@local",
+                "redirect_url": "/"
+            })),
+        ).into_response();
     }
 
     (StatusCode::UNAUTHORIZED, Json(json!({"error": "密钥无效"}))).into_response()
@@ -120,6 +132,44 @@ pub async fn mock_array() -> impl IntoResponse {
     Json(json!([]))
 }
 
+/// GET /global/spend — 总用量
+pub async fn global_spend(State(state): State<Arc<ChatAppState>>) -> impl IntoResponse {
+    let total = state.total_usage.lock().unwrap_or_else(|e| e.into_inner());
+    let usage = state.usage.lock().unwrap_or_else(|e| e.into_inner());
+
+    let model_spend: Vec<Value> = usage
+        .iter()
+        .map(|(model, u)| {
+            json!({
+                "model": model,
+                "prompt_tokens": u.prompt_tokens,
+                "completion_tokens": u.completion_tokens,
+                "total_tokens": u.total_tokens,
+                "requests": u.request_count,
+            })
+        })
+        .collect();
+
+    Json(json!({
+        "total_spend": 0.0,
+        "total_tokens": total.total_tokens,
+        "prompt_tokens": total.prompt_tokens,
+        "completion_tokens": total.completion_tokens,
+        "total_requests": total.request_count,
+        "model_spend": model_spend,
+    }))
+}
+
+/// GET /model/info — 模型列表
+pub async fn model_info(State(state): State<Arc<ChatAppState>>) -> impl IntoResponse {
+    let models: Vec<Value> = state
+        .model_providers
+        .iter()
+        .map(|(name, _cfg)| json!({ "model_name": name, "model_info": { "id": name } }))
+        .collect();
+    Json(json!({ "data": models }))
+}
+
 /// 创建管理路由（不包含 state，由上层统一注入）
 pub fn router() -> axum::Router<Arc<ChatAppState>> {
     axum::Router::new()
@@ -127,8 +177,12 @@ pub fn router() -> axum::Router<Arc<ChatAppState>> {
         .route("/v2/login", axum::routing::post(login))
         .route("/get/ui_settings", axum::routing::get(ui_settings))
         .route("/get/ui_theme_settings", axum::routing::get(ui_theme_settings))
+        .route("/get_image", axum::routing::get(mock_empty))
+        .route("/default_config.content.json", axum::routing::get(mock_empty))
         .route("/user/info", axum::routing::get(user_info))
         .route("/public/litellm_blog_posts", axum::routing::get(mock_array))
         .route("/public/model_hub/info", axum::routing::get(mock_empty))
         .route("/get/favicon", axum::routing::get(mock_empty))
+        .route("/global/spend", axum::routing::get(global_spend))
+        .route("/model/info", axum::routing::get(model_info))
 }

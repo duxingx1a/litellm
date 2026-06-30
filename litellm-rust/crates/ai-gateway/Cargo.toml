@@ -39,7 +39,7 @@ pyo3 = { workspace = true, features = ["auto-initialize"], optional = true }
 # PostgreSQL 用量持久化
 tokio-postgres = { version = "0.7", features = ["with-chrono-0_4", "with-serde_json-1"] }
 # 静态文件服务（前端托管）
-tower-http = { version = "0.5", features = ["fs"] }
+tower-http = { version = "0.5", features = ["fs", "cors"] }
 
 [features]
 default = []
