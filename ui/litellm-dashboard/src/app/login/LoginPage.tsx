@@ -2,15 +2,19 @@
 
 import { useLogin } from "@/app/(dashboard)/hooks/login/useLogin";
 import { consumeReturnUrl } from "@/utils/returnUrlUtils";
+import LoadingScreen from "@/components/common_components/LoadingScreen";
 import { Alert, Button, Card, Form, Input, Space, Typography } from "antd";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function LoginPageContent() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(true);
   const loginMutation = useLogin();
   const router = useRouter();
+  useEffect(() => { setTimeout(() => setLoading(false), 300); }, []);
+  if (loading) return <LoadingScreen />;
 
   const handleSubmit = () => {
     loginMutation.mutate(
