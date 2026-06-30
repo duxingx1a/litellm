@@ -190,6 +190,19 @@ pub async fn spend_logs() -> impl IntoResponse {
     Json(json!({"data": [], "total": 0}))
 }
 
+/// POST /key/generate — 生成密钥
+pub async fn key_generate() -> impl IntoResponse {
+    Json(json!({"key": "sk-generated-000", "key_name": "新密钥"}))
+}
+/// POST /key/delete — 删除密钥
+pub async fn key_delete() -> impl IntoResponse {
+    Json(json!({"status": "ok"}))
+}
+/// GET /user/daily/activity — 每日用量
+pub async fn daily_activity() -> impl IntoResponse {
+    Json(json!({"data": [], "total": 0}))
+}
+
 /// 创建管理路由（不包含 state，由上层统一注入）
 pub fn router() -> axum::Router<Arc<ChatAppState>> {
     axum::Router::new()
@@ -200,6 +213,7 @@ pub fn router() -> axum::Router<Arc<ChatAppState>> {
         .route("/get_image", axum::routing::get(mock_empty))
         .route("/default_config.content.json", axum::routing::get(mock_empty))
         .route("/user/info", axum::routing::get(user_info))
+        .route("/user/daily/activity", axum::routing::get(daily_activity))
         .route("/public/litellm_blog_posts", axum::routing::get(mock_array))
         .route("/public/model_hub/info", axum::routing::get(mock_empty))
         .route("/get/favicon", axum::routing::get(mock_empty))
@@ -208,5 +222,7 @@ pub fn router() -> axum::Router<Arc<ChatAppState>> {
         .route("/model/info", axum::routing::get(model_info))
         .route("/key/info", axum::routing::get(key_info))
         .route("/key/list", axum::routing::get(key_list))
+        .route("/key/generate", axum::routing::post(key_generate))
+        .route("/key/delete", axum::routing::post(key_delete))
         .route("/health/readiness", axum::routing::get(health_readiness))
 }
