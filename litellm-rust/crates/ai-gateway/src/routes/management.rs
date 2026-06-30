@@ -100,10 +100,19 @@ pub async fn ui_config() -> impl IntoResponse {
     }))
 }
 
+/// GET /get/ui_theme_settings — 主题设置
+pub async fn ui_theme_settings() -> impl IntoResponse {
+    Json(json!({
+        "logo_url": null,
+        "theme_mode": "light",
+    }))
+}
+
 /// 创建管理路由（不包含 state，由上层统一注入）
 pub fn router() -> axum::Router<Arc<ChatAppState>> {
     axum::Router::new()
         .route("/login", axum::routing::post(login))
         .route("/get/ui_settings", axum::routing::get(ui_settings))
+        .route("/get/ui_theme_settings", axum::routing::get(ui_theme_settings))
         .route("/user/info", axum::routing::get(user_info))
 }
