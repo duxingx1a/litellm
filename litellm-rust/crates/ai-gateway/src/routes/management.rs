@@ -106,5 +106,4 @@ pub fn router() -> axum::Router<Arc<ChatAppState>> {
         .route("/login", axum::routing::post(login))
         .route("/get/ui_settings", axum::routing::get(ui_settings))
         .route("/user/info", axum::routing::get(user_info))
-        .route("/litellm/.well-known/litellm-ui-config", axum::routing::get(ui_config))
 }
