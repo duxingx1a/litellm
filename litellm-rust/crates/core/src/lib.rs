@@ -1,4 +1,5 @@
 pub mod call_lifecycle;
+pub mod chat;
 pub mod error;
 pub mod ocr;
 pub mod providers;

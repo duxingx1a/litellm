@@ -9,8 +9,8 @@ import ReactQueryProvider from "@/contexts/ReactQueryProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "LiteLLM Dashboard",
-  description: "LiteLLM Proxy Admin UI",
+  title: "LiteLLM 控制台",
+  description: "LiteLLM 代理管理界面",
   icons: { icon: "/get_favicon" },
 };
 
@@ -20,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="zh-CN">
       <body className={inter.className}>
         <ReactQueryProvider>
           <AntdGlobalProvider>

@@ -5,6 +5,7 @@
 //! file (`health.rs`, `gil.rs`); a non-trivial one is a folder (`realtime/`) with
 //! `handler` (entry) + `service` (logic) + `transport` (adapters). See AGENTS.md.
 
+pub mod chat;
 pub mod gil;
 pub mod health;
 pub mod realtime;

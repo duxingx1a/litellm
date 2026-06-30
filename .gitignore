@@ -126,4 +126,4 @@ crash.*.log
 
 # _experimental/out UI build output
 # (both componentized and non-componentized build the UI on project release)
-litellm/proxy/_experimental/out/
+litellm/proxy/_experimental/out/.trash_safe/
