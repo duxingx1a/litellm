@@ -19,7 +19,7 @@ const DEFAULT_PORT: u16 = 4001;
 #[tokio::main]
 async fn main() {
     // 加载配置
-    let chat_state = match ChatAppState::from_env() {
+    let chat_state = match ChatAppState::from_env().await {
         Ok(state) => state,
         Err(e) => {
             eprintln!("配置加载失败: {}", e);
