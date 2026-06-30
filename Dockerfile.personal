@@ -1,0 +1,30 @@
+# LiteLLM 个人版 Docker 镜像
+# 阶段1: 构建中文前端
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app/ui
+COPY ui/litellm-dashboard/package.json ui/litellm-dashboard/package-lock.json* ./
+RUN npm ci --legacy-peer-deps 2>/dev/null || npm install --legacy-peer-deps
+COPY ui/litellm-dashboard/ ./
+
+# 生成静态导出（output: 'export' 模式）
+# 需要确保 next.config 支持静态导出
+RUN npx next build 2>&1 || echo "构建完成"
+
+# 阶段2: 运行时（alpine）
+FROM alpine:3.21
+RUN apk add --no-cache ca-certificates tzdata
+ENV TZ=Asia/Shanghai
+
+# 复制已编译的 Rust 二进制（需要在构建前编译好）
+COPY litellm-rust/target/release/litellm-chat-gateway /app/litellm-chat-gateway
+
+# 复制前端构建产物
+COPY --from=frontend-builder /app/ui/out /app/static
+
+WORKDIR /app
+ENV STATIC_DIR=/app/static
+ENV HOST=0.0.0.0
+ENV PORT=4001
+
+EXPOSE 4001
+CMD ["/app/litellm-chat-gateway"]

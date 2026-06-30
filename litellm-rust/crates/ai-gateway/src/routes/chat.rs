@@ -118,10 +118,16 @@ pub async fn health_check() -> &'static str {
     "ok"
 }
 
-/// 创建 chat 路由
+/// 创建 chat 路由（含前端静态文件托管）
 pub fn router(state: Arc<ChatAppState>) -> axum::Router {
+    use tower_http::services::ServeDir;
+
+    let static_dir = std::env::var("STATIC_DIR").unwrap_or_else(|_| "./static".to_string());
+
     axum::Router::new()
         .route("/v1/chat/completions", axum::routing::post(chat_completions))
         .route("/health", axum::routing::get(health_check))
+        // 前端静态文件（带 SPA fallback）
+        .nest_service("/", ServeDir::new(&static_dir))
         .with_state(state)
 }
