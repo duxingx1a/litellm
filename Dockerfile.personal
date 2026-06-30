@@ -1,21 +1,10 @@
 # LiteLLM 个人版 Docker 镜像
-FROM node:20-alpine AS frontend-builder
-WORKDIR /app/ui
-ENV NODE_OPTIONS="--max-old-space-size=512"
-ENV NEXT_NO_TURBOPACK=1
-COPY ui/litellm-dashboard/package.json ui/litellm-dashboard/package-lock.json* ./
-RUN npm config set registry https://registry.npmmirror.com && npm ci --legacy-peer-deps 2>/dev/null || npm install --legacy-peer-deps
-COPY ui/litellm-dashboard/ ./
-RUN npx next build
-
-# 运行时（alpine）
+# 前端在 Windows 上预构建，Docker 只打包 Alpine + Rust 二进制 + 前端静态文件
 FROM alpine:3.21
 RUN apk add --no-cache ca-certificates tzdata && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
-# 复制已编译的 Rust 二进制（已提前 cp 到不被 dockerignore 排除的位置）
 COPY litellm-rust/litellm-chat-gateway /app/litellm-chat-gateway
-# 复制前端静态文件
-COPY --from=frontend-builder /app/ui/out /app/static
+COPY ui/litellm-dashboard/out /app/static
 
 WORKDIR /app
 ENV STATIC_DIR=/app/static
