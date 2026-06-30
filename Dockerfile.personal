@@ -5,7 +5,7 @@ ENV NODE_OPTIONS="--max-old-space-size=512"
 COPY ui/litellm-dashboard/package.json ui/litellm-dashboard/package-lock.json* ./
 RUN npm config set registry https://registry.npmmirror.com && npm ci --legacy-peer-deps 2>/dev/null || npm install --legacy-peer-deps
 COPY ui/litellm-dashboard/ ./
-RUN npx next build --no-turbo
+RUN npx next build
 
 # 运行时（alpine）
 FROM alpine:3.21
