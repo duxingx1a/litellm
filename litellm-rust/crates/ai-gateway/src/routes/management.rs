@@ -80,7 +80,7 @@ pub async fn user_info() -> impl IntoResponse {
         "user_id": "default_user",
         "user_role": "admin",
         "user_email": "admin@local",
-        "max_budget": null::<f64>,
+        "max_budget": null,
         "spend": 0.0,
         "models": [],
         "tpm_limit": null::<i64>,
