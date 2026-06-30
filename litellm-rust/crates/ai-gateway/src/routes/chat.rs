@@ -11,7 +11,7 @@ use axum::{
     Json,
 };
 use litellm_core::chat::types::{ChatCompletionRequest, ChatCompletionResponse};
-use serde_json::json;
+use serde_json::{json, Value};
 use std::sync::Arc;
 
 use crate::chat_state::ChatAppState;
@@ -118,6 +118,18 @@ pub async fn health_check() -> &'static str {
     "ok"
 }
 
+/// 前端 well-known UI config
+async fn ui_well_known() -> impl IntoResponse {
+    Json(json!({
+        "server_root_path": "",
+        "proxy_base_url": "",
+        "auto_redirect_to_sso": false,
+        "admin_ui_disabled": false,
+        "sso_configured": false,
+        "is_control_plane": false,
+    }))
+}
+
 /// 创建 chat 路由（含前端静态文件 + 管理 API）
 pub fn router(state: Arc<ChatAppState>) -> axum::Router {
     use tower_http::services::ServeDir;
@@ -127,6 +139,7 @@ pub fn router(state: Arc<ChatAppState>) -> axum::Router {
     axum::Router::new()
         .route("/v1/chat/completions", axum::routing::post(chat_completions))
         .route("/health", axum::routing::get(health_check))
+        .route("/litellm/.well-known/litellm-ui-config", axum::routing::get(ui_well_known))
         .merge(crate::routes::management::router())
         // 前端静态文件（带 SPA fallback）
         .nest_service("/", ServeDir::new(&static_dir))
