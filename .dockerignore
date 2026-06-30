@@ -50,7 +50,7 @@ build/
 .DS_Store
 **/node_modules
 ui/litellm-dashboard/.next
-ui/litellm-dashboard/out
+ui/litellm-dashboard/node_modules
 litellm-rust/target/
 litellm/rust_bridge/_native*.so
 *.log
