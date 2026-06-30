@@ -114,6 +114,7 @@ pub async fn ui_theme_settings() -> impl IntoResponse {
 pub fn router() -> axum::Router<Arc<ChatAppState>> {
     axum::Router::new()
         .route("/login", axum::routing::post(login))
+        .route("/v2/login", axum::routing::post(login))
         .route("/get/ui_settings", axum::routing::get(ui_settings))
         .route("/get/ui_theme_settings", axum::routing::get(ui_theme_settings))
         .route("/user/info", axum::routing::get(user_info))
