@@ -83,8 +83,8 @@ pub async fn user_info() -> impl IntoResponse {
         "max_budget": null,
         "spend": 0.0,
         "models": [],
-        "tpm_limit": null::<i64>,
-        "rpm_limit": null::<i64>,
+        "tpm_limit": null,
+        "rpm_limit": null,
     }))
 }
 
