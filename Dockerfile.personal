@@ -1,18 +1,18 @@
 # LiteLLM 个人版 Docker 镜像
-# 阶段1: 构建中文前端
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/ui
+ENV NODE_OPTIONS="--max-old-space-size=512"
 COPY ui/litellm-dashboard/package.json ui/litellm-dashboard/package-lock.json* ./
 RUN npm config set registry https://registry.npmmirror.com && npm ci --legacy-peer-deps 2>/dev/null || npm install --legacy-peer-deps
 COPY ui/litellm-dashboard/ ./
 RUN npx next build
 
-# 阶段2: 运行时（alpine）
+# 运行时（alpine）
 FROM alpine:3.21
 RUN apk add --no-cache ca-certificates tzdata && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
-# 复制已编译的 Rust 二进制
-COPY litellm-rust/target/release/litellm-chat-gateway /app/litellm-chat-gateway
+# 复制已编译的 Rust 二进制（已提前 cp 到不被 dockerignore 排除的位置）
+COPY litellm-rust/litellm-chat-gateway /app/litellm-chat-gateway
 # 复制前端静态文件
 COPY --from=frontend-builder /app/ui/out /app/static
 
