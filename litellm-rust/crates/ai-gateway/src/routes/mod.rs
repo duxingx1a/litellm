@@ -8,6 +8,7 @@
 pub mod chat;
 pub mod gil;
 pub mod health;
+pub mod management;
 pub mod realtime;
 
 use axum::Router;
