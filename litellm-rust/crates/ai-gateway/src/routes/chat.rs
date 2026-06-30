@@ -136,12 +136,22 @@ pub fn router(state: Arc<ChatAppState>) -> axum::Router {
 
     let static_dir = std::env::var("STATIC_DIR").unwrap_or_else(|_| "./static".to_string());
 
+    // 未匹配 API 请求的 fallback：返回空 JSON（前端 JS 需要 JSON 响应）
+    async fn api_fallback(method: axum::http::Method) -> impl IntoResponse {
+        if method == axum::http::Method::POST {
+            (StatusCode::OK, Json(json!({"ok": true})))
+        } else {
+            Json(json!({}))
+        }
+    }
+
     axum::Router::new()
         .route("/v1/chat/completions", axum::routing::post(chat_completions))
         .route("/health", axum::routing::get(health_check))
         .route("/litellm/.well-known/litellm-ui-config", axum::routing::get(ui_well_known))
         .merge(crate::routes::management::router())
-        // 前端静态文件（带 SPA fallback）
+        // 前端静态文件
         .nest_service("/", ServeDir::new(&static_dir))
+        .fallback(api_fallback)
         .with_state(state)
 }
