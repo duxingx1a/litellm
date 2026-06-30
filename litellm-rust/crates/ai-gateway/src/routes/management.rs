@@ -12,10 +12,18 @@ use axum::{
     response::IntoResponse,
     Json,
 };
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use serde_json::{json, Value};
 use std::sync::Arc;
 
 use crate::chat_state::ChatAppState;
+
+/// 生成简单 JWT（前端 isJwtExpired 需要 JWT 格式）
+fn make_jwt(key: &str) -> String {
+    let header = URL_SAFE_NO_PAD.encode(r#"{"alg":"none","typ":"JWT"}"#);
+    let payload = URL_SAFE_NO_PAD.encode(format!(r#"{{"exp":9999999999,"sub":"{}"}}"#, key));
+    format!("{}.{}.", header, payload)
+}
 
 /// POST /login 或 /v2/login — 用户名+密码或直接Bearer登录
 pub async fn login(
@@ -52,14 +60,17 @@ pub async fn login(
         .unwrap_or("");
 
     if state.validate_token(password) {
+        let jwt = make_jwt(password);
         return (
-            StatusCode::FOUND,
+            StatusCode::OK,
             [
-                (axum::http::header::SET_COOKIE, format!("token={}; Path=/; SameSite=Lax; Max-Age=86400", password)),
-                (axum::http::header::LOCATION, "/ui/".to_string()),
+                (axum::http::header::SET_COOKIE, format!("token={}; Path=/; SameSite=Lax; Max-Age=86400", jwt)),
             ],
             Json(json!({
-                "token": password,
+                "token": jwt,
+                "user_id": "default_user",
+                "user_role": "admin",
+                "user_email": "admin@local",
                 "redirect_url": "/"
             })),
         ).into_response();
