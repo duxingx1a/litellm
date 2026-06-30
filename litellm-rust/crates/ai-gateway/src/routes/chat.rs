@@ -122,7 +122,7 @@ pub async fn health_check() -> &'static str {
 async fn ui_well_known() -> impl IntoResponse {
     Json(json!({
         "server_root_path": "",
-        "proxy_base_url": "",
+        "proxy_base_url": null,
         "auto_redirect_to_sso": false,
         "admin_ui_disabled": false,
         "sso_configured": false,
