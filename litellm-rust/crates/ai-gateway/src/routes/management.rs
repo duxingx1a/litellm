@@ -103,8 +103,10 @@ pub async fn ui_config() -> impl IntoResponse {
 /// GET /get/ui_theme_settings — 主题设置
 pub async fn ui_theme_settings() -> impl IntoResponse {
     Json(json!({
-        "logo_url": null,
-        "theme_mode": "light",
+        "values": {
+            "logo_url": null,
+            "favicon_url": null,
+        }
     }))
 }
 
