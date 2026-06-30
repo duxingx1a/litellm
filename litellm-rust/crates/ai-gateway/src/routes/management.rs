@@ -17,14 +17,13 @@ use std::sync::Arc;
 
 use crate::chat_state::ChatAppState;
 
-/// POST /login — 使用 Bearer token 登录
-/// 前端发送 { username: "", password: "master_key" } 或直接 Bearer token
+/// POST /login 或 /v2/login — 用户名+密码或直接Bearer登录
 pub async fn login(
     State(state): State<Arc<ChatAppState>>,
     headers: HeaderMap,
-    body: Option<Json<Value>>,
+    Json(body): Json<Value>,
 ) -> impl IntoResponse {
-    // 方式1：Bearer token
+    // 方式1：Bearer token（优先）
     if let Some(auth) = headers.get("authorization") {
         if let Ok(auth_str) = auth.to_str() {
             let token = auth_str.strip_prefix("Bearer ").unwrap_or("");
@@ -33,24 +32,27 @@ pub async fn login(
                     "token": token,
                     "user_id": "default_user",
                     "user_role": "admin",
-                    "user_email": "admin@local"
+                    "user_email": "admin@local",
+                    "redirect_url": "/ui/"
                 }))).into_response();
             }
         }
     }
 
-    // 方式2：表单登录 { username, password }
-    if let Some(Json(body)) = body {
-        if let Some(password) = body.get("password").and_then(|v| v.as_str()) {
-            if state.validate_token(password) {
-                return (StatusCode::OK, Json(json!({
-                    "token": password,
-                    "user_id": "default_user",
-                    "user_role": "admin",
-                    "user_email": "admin@local"
-                }))).into_response();
-            }
-        }
+    // 方式2：JSON body { username, password }
+    let password = body
+        .get("password")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+
+    if state.validate_token(password) {
+        return (StatusCode::OK, Json(json!({
+            "token": password,
+            "user_id": "default_user",
+            "user_role": "admin",
+            "user_email": "admin@local",
+            "redirect_url": "/ui/"
+        }))).into_response();
     }
 
     (StatusCode::UNAUTHORIZED, Json(json!({"error": "密钥无效"}))).into_response()
